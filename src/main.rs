@@ -5,6 +5,8 @@ use serenity::framework::StandardFramework;
 use serenity::model::channel::Message;
 use serenity::{async_trait, Client};
 
+mod system;
+
 #[group]
 struct General;
 

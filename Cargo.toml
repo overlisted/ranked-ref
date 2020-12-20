@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 serenity = "0.9.3"
+dashmap = "3.11.10"
 
 [dependencies.tokio]
 version = "0.2"
