@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::RwLockWriteGuard;
 
-use dashmap::mapref::one::RefMut;
+use dashmap::mapref::one::{RefMut, Ref};
 use dashmap::DashMap;
 use serenity::client::{Context, EventHandler};
 use serenity::framework::standard::macros::{command, group};
@@ -62,11 +62,18 @@ async fn into_leaderboards(
         .clone()
 }
 
-async fn get_leaderboard(
+async fn get_mut_leaderboard(
     lbs: &Arc<DashMap<GuildId, Leaderboard>>,
     guild: Option<GuildId>,
 ) -> Result<RefMut<'_, GuildId, Leaderboard>, ()> {
     lbs.get_mut(&guild.ok_or(())?).ok_or(())
+}
+
+async fn get_leaderboard(
+    lbs: &Arc<DashMap<GuildId, Leaderboard>>,
+    guild: Option<GuildId>,
+) -> Result<Ref<'_, GuildId, Leaderboard>, ()> {
+    lbs.get(&guild.ok_or(())?).ok_or(())
 }
 
 #[command]
@@ -75,7 +82,7 @@ async fn score(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let loser = args.single_quoted::<String>()?;
 
     let lbs = &into_leaderboards(ctx.data.write().await).await;
-    if let Ok(mut lb) = get_leaderboard(lbs, msg.guild_id).await {
+    if let Ok(mut lb) = get_mut_leaderboard(lbs, msg.guild_id).await {
         let (winner, loser) = lb.score(winner, loser);
         msg.reply(
             ctx,
@@ -99,7 +106,7 @@ async fn register(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     let player = args.single_quoted::<String>()?;
 
     let lbs = &into_leaderboards(ctx.data.write().await).await;
-    if let Ok(mut lb) = get_leaderboard(lbs, msg.guild_id).await {
+    if let Ok(mut lb) = get_mut_leaderboard(lbs, msg.guild_id).await {
         if lb.find_player(player.clone()) == None {
             let player = lb.insert_player(player);
             msg.reply(ctx, format!("**Ok**!\n{}", lb.format_player(&player)))
