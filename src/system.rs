@@ -51,15 +51,19 @@ impl Leaderboard {
             .unwrap_or(self.0.len())
     }
 
-    fn find_player(&self, name: String) -> &Player {
-        self.0
-            .iter()
-            .find(|it| it.id == name)
-            .expect("Player isn't in the system!")
+    pub fn find_player(&self, name: String) -> Option<&Player> {
+        self.0.iter().find(|it| it.id == name)
+    }
+
+    fn expect_player(&self, name: String) -> &Player {
+        self.find_player(name).expect("Player isn't in the system!")
     }
 
     pub fn score(&mut self, winner: String, loser: String) -> (Player, Player) {
-        let (winner, loser) = (self.find_player(winner).clone(), self.find_player(loser).clone());
+        let (winner, loser) = (
+            self.expect_player(winner).clone(),
+            self.expect_player(loser).clone(),
+        );
 
         let winner = self.0.take(&winner).unwrap();
         let loser = self.0.take(&loser).unwrap();
