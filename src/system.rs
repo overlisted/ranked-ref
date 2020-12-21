@@ -25,7 +25,7 @@ impl Player {
         self.increase = score;
 
         let new = self.score as i32 + score;
-        self.score = new.min(0) as u32;
+        self.score = new.max(0) as u32;
 
         self
     }
