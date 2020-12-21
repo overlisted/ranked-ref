@@ -1,4 +1,7 @@
-use crate::system::Leaderboard;
+use std::sync::Arc;
+use tokio::sync::RwLockWriteGuard;
+
+use dashmap::mapref::one::RefMut;
 use dashmap::DashMap;
 use serenity::client::{Context, EventHandler};
 use serenity::framework::standard::macros::{command, group};
@@ -7,7 +10,9 @@ use serenity::framework::StandardFramework;
 use serenity::model::channel::Message;
 use serenity::model::id::GuildId;
 use serenity::{async_trait, Client};
-use std::sync::Arc;
+
+use crate::system::Leaderboard;
+use serenity::prelude::TypeMap;
 
 mod system;
 mod view;
@@ -48,34 +53,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+async fn into_leaderboards(
+    mut write: RwLockWriteGuard<'_, TypeMap>,
+) -> Arc<DashMap<GuildId, Leaderboard>> {
+    write
+        .get_mut::<Leaderboard>()
+        .expect("Leaderboards aren't initialized!")
+        .clone()
+}
+
+async fn get_leaderboard(
+    lbs: &Arc<DashMap<GuildId, Leaderboard>>,
+    guild: Option<GuildId>,
+) -> Result<RefMut<'_, GuildId, Leaderboard>, ()> {
+    lbs.get_mut(&guild.ok_or(())?).ok_or(())
+}
+
 #[command]
 async fn score(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let winner = args.single_quoted::<String>()?;
     let loser = args.single_quoted::<String>()?;
 
-    let mut data = ctx.data.write().await;
-    let lbs = data
-        .get_mut::<Leaderboard>()
-        .expect("There's no leaderboard storage!");
-    let mut lb = match lbs.get_mut(&msg.guild_id.expect("Guild ID is None!")) {
-        Some(lbs) => lbs,
-        None => {
-            msg.reply(ctx, "This guild doesn't have a leaderboard!")
-                .await?;
-            return Ok(());
-        }
-    };
+    let lbs = &into_leaderboards(ctx.data.write().await).await;
+    if let Ok(mut lb) = get_leaderboard(lbs, msg.guild_id).await {
+        let (winner, loser) = lb.score(winner, loser);
+        msg.reply(
+            ctx,
+            format!(
+                "**Ok**!\n{}\n{}",
+                lb.format_player(&winner),
+                lb.format_player(&loser)
+            ),
+        )
+        .await?;
+    } else {
+        msg.reply(ctx, "This server doesn't have a leaderboard!")
+            .await?;
+    }
 
-    let (winner, loser) = lb.score(winner, loser);
-    msg.reply(
-        ctx,
-        format!(
-            "**Ok**!\n{}\n{}",
-            lb.format_player(&winner),
-            lb.format_player(&loser)
-        ),
-    )
-    .await?;
+    Ok(())
+}
 
     Ok(())
 }
