@@ -18,7 +18,7 @@ mod system;
 mod view;
 
 #[group]
-#[commands(score)]
+#[commands(score, register)]
 struct General;
 
 struct Handler;
@@ -93,6 +93,24 @@ async fn score(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     Ok(())
 }
+
+#[command]
+async fn register(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let player = args.single_quoted::<String>()?;
+
+    let lbs = &into_leaderboards(ctx.data.write().await).await;
+    if let Ok(mut lb) = get_leaderboard(lbs, msg.guild_id).await {
+        if lb.find_player(player.clone()) == None {
+            let player = lb.insert_player(player);
+            msg.reply(ctx, format!("**Ok**!\n{}", lb.format_player(&player)))
+                .await?;
+        } else {
+            msg.reply(ctx, "The player is already registered!").await?;
+        }
+    } else {
+        msg.reply(ctx, "This server doesn't have a leaderboard!")
+            .await?;
+    }
 
     Ok(())
 }
