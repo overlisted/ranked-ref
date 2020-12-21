@@ -31,7 +31,7 @@ impl Player {
     }
 }
 
-pub struct Leaderboard(BTreeSet<Player>);
+pub struct Leaderboard(pub(crate) BTreeSet<Player>);
 
 impl Leaderboard {
     pub(crate) fn new() -> Leaderboard {
