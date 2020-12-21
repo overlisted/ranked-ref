@@ -55,6 +55,17 @@ impl Leaderboard {
         self.0.iter().find(|it| it.id == name)
     }
 
+    pub fn insert_player(&mut self, name: String) -> Player {
+        let player = Player {
+            score: 0,
+            increase: 0,
+            id: name,
+        };
+
+        self.0.insert(player.clone());
+        player
+    }
+
     fn expect_player(&self, name: String) -> &Player {
         self.find_player(name).expect("Player isn't in the system!")
     }
