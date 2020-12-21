@@ -16,7 +16,7 @@ impl Leaderboard {
     }
 
     pub(crate) fn format(&self) -> String {
-        let mut players: Vec<String> = self.0.iter().map(|it| self.format_player(it)).collect();
+        let mut players: Vec<String> = self.0.iter().rev().map(|it| self.format_player(it)).collect();
         if players.is_empty() {
             players.push(String::from("*No players*"));
         }

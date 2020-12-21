@@ -44,11 +44,13 @@ impl Leaderboard {
         (winner, loser)
     }
 
-    pub fn rank_of(&self, player: &Player) -> usize {
-        self.0
-            .iter()
-            .position(|it| it == player)
-            .unwrap_or(self.0.len())
+    pub fn rank_of(&self, player: &Player) -> u32 {
+        let index = self.0.iter().position(|it| it == player).unwrap_or(0);
+        let index = index as i32;
+        let len = self.0.len() as i32;
+
+        let index = (len - index).abs();
+        index as u32
     }
 
     pub fn find_player(&self, name: String) -> Option<&Player> {
