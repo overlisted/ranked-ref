@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::RwLockWriteGuard;
 
-use dashmap::mapref::one::{RefMut, Ref};
+use dashmap::mapref::one::{Ref, RefMut};
 use dashmap::DashMap;
 use serenity::client::{Context, EventHandler};
 use serenity::framework::standard::macros::{command, group};
@@ -18,7 +18,7 @@ mod system;
 mod view;
 
 #[group]
-#[commands(score, register)]
+#[commands(score, register, leaderboard)]
 struct General;
 
 struct Handler;
@@ -114,6 +114,19 @@ async fn register(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         } else {
             msg.reply(ctx, "The player is already registered!").await?;
         }
+    } else {
+        msg.reply(ctx, "This server doesn't have a leaderboard!")
+            .await?;
+    }
+
+    Ok(())
+}
+
+#[command]
+async fn leaderboard(ctx: &Context, msg: &Message) -> CommandResult {
+    let lbs = &into_leaderboards(ctx.data.write().await).await;
+    if let Ok(lb) = get_leaderboard(lbs, msg.guild_id).await {
+        msg.reply(ctx, lb.format()).await?;
     } else {
         msg.reply(ctx, "This server doesn't have a leaderboard!")
             .await?;
