@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 use dashmap::DashMap;
 use serenity::model::id::GuildId;
@@ -70,4 +71,8 @@ impl Leaderboard {
 
         (winner, loser)
     }
+}
+
+impl TypeMapKey for Leaderboard {
+    type Value = Arc<DashMap<GuildId, Leaderboard>>;
 }

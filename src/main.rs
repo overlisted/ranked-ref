@@ -1,8 +1,11 @@
+use crate::system::Leaderboard;
+use dashmap::DashMap;
 use serenity::client::{Context, EventHandler};
 use serenity::framework::standard::macros::{command, group};
 use serenity::framework::standard::CommandResult;
 use serenity::framework::StandardFramework;
 use serenity::model::channel::Message;
+use serenity::model::id::GuildId;
 use serenity::{async_trait, Client};
 
 mod system;
@@ -27,6 +30,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .event_handler(Handler)
         .framework(fm)
         .await?;
+
+    let map = DashMap::new();
+    map.insert(GuildId::from(786739598389805057), Leaderboard::new());
+
+    {
+        let mut data = client.data.write().await;
+
+        data.insert::<Leaderboard>(Arc::new(map))
+    }
 
     client.start().await?;
 
