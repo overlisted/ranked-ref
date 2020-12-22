@@ -21,7 +21,7 @@ mod system;
 mod view;
 
 #[group]
-#[commands(score, register, leaderboard)]
+#[commands(score, register, leaderboard, initialize)]
 struct General;
 
 struct Handler;
@@ -149,6 +149,24 @@ async fn leaderboard(ctx: &Context, msg: &Message) -> CommandResult {
     } else {
         msg.reply(ctx, "This server doesn't have a leaderboard!")
             .await?;
+    }
+
+    Ok(())
+}
+
+#[command]
+async fn initialize(ctx: &Context, msg: &Message) -> CommandResult {
+    let lbs = &into_leaderboards(ctx.data.write().await);
+    if let Ok(_) = get_mut_leaderboard(lbs, msg.guild_id).await {
+        msg.reply(
+            ctx,
+            "This server already has a leaderboard (see /leaderboard)!",
+        )
+        .await?;
+    } else {
+        lbs.insert(msg.guild_id.expect("Guild ID is none!"), Leaderboard::new());
+        save_leaderboards(ctx.data.clone(), lbs).await;
+        msg.reply(ctx, "Ok!").await?;
     }
 
     Ok(())
