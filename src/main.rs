@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use tokio::sync::RwLockWriteGuard;
 
 use dashmap::mapref::one::{Ref, RefMut};
@@ -11,9 +11,12 @@ use serenity::model::channel::Message;
 use serenity::model::id::GuildId;
 use serenity::{async_trait, Client};
 
+use crate::serializing::{Backend, JsonFileBackend};
 use crate::system::Leaderboard;
 use serenity::prelude::TypeMap;
+use std::path::Path;
 
+mod serializing;
 mod system;
 mod view;
 
@@ -39,13 +42,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .framework(fm)
         .await?;
 
-    let map = DashMap::new();
-    map.insert(GuildId::from(786739598389805057), Leaderboard::new());
-
     {
         let mut data = client.data.write().await;
+        let lbs_path = Path::new("leaderboards.json");
+        let mut backend = serializing::JsonFileBackend::new(lbs_path);
 
-        data.insert::<Leaderboard>(Arc::new(map))
+        data.insert::<Leaderboard>(Arc::new(backend.deserialize()));
+        data.insert::<serializing::JsonFileBackend>(RwLock::new(backend));
     }
 
     client.start().await?;
@@ -76,6 +79,19 @@ async fn get_leaderboard(
     lbs.get(&guild.ok_or(())?).ok_or(())
 }
 
+async fn save_leaderboards(
+    data: Arc<tokio::sync::RwLock<TypeMap>>,
+    lbs: &Arc<DashMap<GuildId, Leaderboard>>,
+) {
+    data.write()
+        .await
+        .get_mut::<JsonFileBackend>()
+        .expect("JSON backend isn't initialized!")
+        .write()
+        .expect("Can't use the JSON backend!")
+        .serialize(lbs);
+}
+
 #[command]
 async fn score(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let winner = args.single_quoted::<String>()?;
@@ -84,6 +100,7 @@ async fn score(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let lbs = &into_leaderboards(ctx.data.write().await);
     if let Ok(mut lb) = get_mut_leaderboard(lbs, msg.guild_id).await {
         let (winner, loser) = lb.score(winner, loser);
+        save_leaderboards(ctx.data.clone(), lbs).await;
         msg.reply(
             ctx,
             format!(
@@ -109,6 +126,8 @@ async fn register(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     if let Ok(mut lb) = get_mut_leaderboard(lbs, msg.guild_id).await {
         if lb.find_player(player.clone()) == None {
             let player = lb.insert_player(player);
+
+            save_leaderboards(ctx.data.clone(), lbs).await;
             msg.reply(ctx, format!("**Ok**!\n{}", lb.format_player(&player)))
                 .await?;
         } else {
