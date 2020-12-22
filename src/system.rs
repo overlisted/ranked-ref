@@ -2,10 +2,11 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use dashmap::DashMap;
+use serde::{Deserialize, Serialize};
 use serenity::model::id::GuildId;
 use serenity::prelude::TypeMapKey;
 
-#[derive(PartialOrd, Ord, Clone)]
+#[derive(Serialize, Deserialize, PartialOrd, Ord, Clone)]
 pub struct Player {
     pub score: u32,
     pub increase: i32,
@@ -31,6 +32,7 @@ impl Player {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Leaderboard(pub(crate) BTreeSet<Player>);
 
 impl Leaderboard {

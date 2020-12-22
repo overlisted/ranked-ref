@@ -188,6 +188,7 @@ dependencies = [
  "ahash",
  "cfg-if 0.1.10",
  "num_cpus",
+ "serde",
 ]
 
 [[package]]
@@ -866,6 +867,8 @@ name = "ranked-ref"
 version = "0.1.0"
 dependencies = [
  "dashmap",
+ "serde",
+ "serde_json",
  "serenity",
  "tokio",
 ]

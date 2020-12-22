@@ -6,8 +6,16 @@ edition = "2018"
 
 [dependencies]
 serenity = "0.9.3"
-dashmap = "3.11.10"
+serde_json = "1.0"
+
+[dependencies.serde]
+version = "1.0.118"
+features = ["derive"]
 
 [dependencies.tokio]
 version = "0.2"
 features = ["full"]
+
+[dependencies.dashmap]
+version = "3.11.10"
+features = ["serde"]
