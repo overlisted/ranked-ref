@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn into_leaderboards(
+fn into_leaderboards(
     mut write: RwLockWriteGuard<'_, TypeMap>,
 ) -> Arc<DashMap<GuildId, Leaderboard>> {
     write
@@ -81,7 +81,7 @@ async fn score(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let winner = args.single_quoted::<String>()?;
     let loser = args.single_quoted::<String>()?;
 
-    let lbs = &into_leaderboards(ctx.data.write().await).await;
+    let lbs = &into_leaderboards(ctx.data.write().await);
     if let Ok(mut lb) = get_mut_leaderboard(lbs, msg.guild_id).await {
         let (winner, loser) = lb.score(winner, loser);
         msg.reply(
@@ -105,7 +105,7 @@ async fn score(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 async fn register(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let player = args.single_quoted::<String>()?;
 
-    let lbs = &into_leaderboards(ctx.data.write().await).await;
+    let lbs = &into_leaderboards(ctx.data.write().await);
     if let Ok(mut lb) = get_mut_leaderboard(lbs, msg.guild_id).await {
         if lb.find_player(player.clone()) == None {
             let player = lb.insert_player(player);
@@ -124,7 +124,7 @@ async fn register(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
 #[command]
 async fn leaderboard(ctx: &Context, msg: &Message) -> CommandResult {
-    let lbs = &into_leaderboards(ctx.data.write().await).await;
+    let lbs = &into_leaderboards(ctx.data.write().await);
     if let Ok(lb) = get_leaderboard(lbs, msg.guild_id).await {
         msg.reply(ctx, lb.format()).await?;
     } else {
