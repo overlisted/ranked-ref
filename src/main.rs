@@ -157,10 +157,13 @@ async fn leaderboard(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 async fn initialize(ctx: &Context, msg: &Message) -> CommandResult {
     let lbs = &into_leaderboards(ctx.data.write().await);
-    if let Ok(_) = get_mut_leaderboard(lbs, msg.guild_id).await {
+    if let Ok(lb) = get_mut_leaderboard(lbs, msg.guild_id).await {
         msg.reply(
             ctx,
-            "This server already has a leaderboard (see /leaderboard)!",
+            format!(
+                "**This server already has a leaderboard**:\n{}",
+                lb.format()
+            ),
         )
         .await?;
     } else {
